@@ -45,6 +45,9 @@ typedef enum
 /* Command mode sequence */    
 extern char COMMAND_MODE[];
 extern char CMD_RESPONSE_EXP[];
+extern char SET_BAUDRATE_115200[];
+extern char ENABLE_DHCP[];
+extern char SET_AUTH_WPA_WPA2[];
 
 /* Response sequences */
 extern char RESPONSE_AOK[];
@@ -58,6 +61,8 @@ extern char SET_WLAN_SSID[];
 extern char SET_WLAN_PASSWORD[];
 /* Enable auto-join */
 extern char ENABLE_WLAN_AUTOJOIN[];
+/* Join saved network sequence */
+extern char JOIN_NETWORK[];
 
 /*****************************************************************/
 
@@ -68,28 +73,30 @@ extern char ENABLE_WLAN_AUTOJOIN[];
 /* Send packet to enter command mode */
 void enterCommandMode(char *response);
 
+/* Send general command */
+void sendCommand(char *cmd, char *response);
+
 /* Scan for available networks */
 uint16_t scanForNetworks(char *network_list);
 
 /* Set saved SSID*/
-uint8_t setSSID(char *ssid);
+WIFLY_RESPONSE setSSID(char *ssid);
 
 /* Set saved password */
-uint8_t setPassword(char *password);
+WIFLY_RESPONSE setPassword(char *password);
 
 /* Set WLAN SSID and password */
-uint8_t connectToNetwork(void);
+WIFLY_RESPONSE connectToNetwork(void);
 
 /* Turn on auto-join feature */
-uint8_t enableAutoJoin(void);
-
-/* Turn off auto-join feature */
-uint8_t disableAutoJoin(void);
+WIFLY_RESPONSE enableAutoJoin(void);
 
 /*****************************************************************/
 /********************* Accessory Functions ***********************/
 /*****************************************************************/
 
+/* Read string from terminal and return number of chars read */
+uint8_t readTerminalString(char *buffer);
 /* Read an unknown amount of characters into the buffer */
 uint16_t wifly_read(char *buffer);
 /* Required delay before and after entering command mode */

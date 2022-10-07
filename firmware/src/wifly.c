@@ -24,16 +24,19 @@
 
 char COMMAND_MODE[] = {'$','$','$'};
 char CMD_RESPONSE_EXP[] = {'C','M','D'};
+char SET_BAUDRATE_115200[] = "set uart b 115200\r\n";
+char ENABLE_DHCP[] = "set ip dhcp 1\r\n";
+char SET_AUTH_WPA_WPA2[] = "set wlan auth 4";
 
 char RESPONSE_AOK[] = "AOK";
 char RESPONSE_ERR[] = "ERR";
 
 char SCAN_FOR_NETWORKS[] = "scan\r\n";              //{'S','C','A','N','\r'};
 char SET_WLAN_SSID[] = "set wlan ssid ";
-char SET_WLAN_PASSWORD[] = "set wlan pass ";
+char SET_WLAN_PASSWORD[] = "set wlan phrase ";
 char ENABLE_WLAN_AUTOJOIN[] = "set wlan join 1\r\n";
 
-
+char JOIN_NETWORK[] = "join/r/n";
 
 void enterCommandMode(char *response)
 {
@@ -48,6 +51,13 @@ void enterCommandMode(char *response)
     delay_250ms();
 }
 
+void sendCommand(char *cmd, char *response)
+{
+    UART2_Write(cmd, sizeof(cmd));
+    /* Wait for RN131 response */
+    UART2_Read(response, 3);
+}
+
 uint16_t scanForNetworks(char *network_list)
 {
     /* Send scan command */
@@ -56,7 +66,7 @@ uint16_t scanForNetworks(char *network_list)
     return wifly_read(network_list);
 }
 
-uint8_t setSSID(char *ssid)
+WIFLY_RESPONSE setSSID(char *ssid)
 {
     char ssid_packet[30];       //SSID name packet
     char response_packet[5];    //Response from RN131
@@ -79,7 +89,7 @@ uint8_t setSSID(char *ssid)
     return FAILURE;
 }
 
-uint8_t setPassword(char *password)
+WIFLY_RESPONSE setPassword(char *password)
 {
     char password_packet[30];   //Password packet
     char response_packet[5];    //Response from RN131
@@ -103,12 +113,12 @@ uint8_t setPassword(char *password)
     return FAILURE;
 }
 
-uint8_t connectToNetwork(void)
+WIFLY_RESPONSE connectToNetwork(void)
 {
     return SUCCESS;
 }
 
-uint8_t enableAutoJoin(void)
+WIFLY_RESPONSE enableAutoJoin(void)
 {
     char response_packet[5];    //Response from RN131
     
@@ -123,6 +133,33 @@ uint8_t enableAutoJoin(void)
         return FAILURE;
     }
     return SUCCESS;
+}
+
+uint8_t readTerminalString(char *buffer)
+{
+    /* Counter variable */
+    uint16_t num_chars = 0;
+    
+    /* Loop until buffer full or timeout */
+    while(num_chars < sizeof(buffer))
+    {
+        /*Set 500ms timeout period */
+        PR4 = 49999998U;
+        TMR4_Start();
+        /* Wait for data */
+        while(!(U6STA & _U6STA_URXDA_MASK))
+        {
+            if(IFS0bits.T5IF == 1)  //Timeout occurred
+            {
+                /* Return number read, read finished */
+                return num_chars;
+            }
+        }
+        /* Read character */
+        buffer[num_chars++] = (char)UART6_ReadByte();
+    }
+    /* Buffer completely full, may have missed data */
+    return num_chars;
 }
 
 uint16_t wifly_read(char *buffer)
